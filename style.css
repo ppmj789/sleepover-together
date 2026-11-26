@@ -1,15 +1,24 @@
 [hidden] { display: none !important; }
-:root { --line: #000; --head: #e6e6e6; --soft: #f3f3f3; --muted: #555; --red: #c8102e; }
+:root {
+  /* 未知 시리즈 공통 팔레트 (未知의 서재와 동일) */
+  --bg: #F5F1E8; --paper: #FDFAF3; --ink: #1A1612; --muted: #6B5E50;
+  --line: #1A1612; --head: #EDE8DA; --soft: #F8F3E6;
+  --accent: #3B5998; --red: #C0392B;
+  --display: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+  --serif: 'Noto Serif KR', 'Nanum Myeongjo', 'Batang', serif;
+}
 * { box-sizing: border-box; }
-body { margin: 0; background: #d9d9d9; color: #000; font-family: 'Nanum Gothic', sans-serif; font-size: 15px; line-height: 1.6; }
-.paper { max-width: 760px; margin: 24px auto; background: #fff; padding: 32px 36px 40px; box-shadow: 0 1px 4px rgba(0,0,0,.18); }
-@media (max-width: 640px) { .paper { margin: 0; padding: 20px 16px 32px; box-shadow: none; } body { background: #fff; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--display); font-size: 15px; line-height: 1.6; }
+.paper { max-width: 760px; margin: 24px auto; background: var(--paper); padding: 32px 36px 40px; box-shadow: 0 1px 3px rgba(26,22,18,.12); }
+@media (max-width: 640px) { .paper { margin: 0; padding: 20px 16px 32px; box-shadow: none; } body { background: var(--paper); } }
 
 .slogan { border: 1px solid var(--line); text-align: center; font-size: 13px; padding: 2px 0; letter-spacing: .04em; }
 .masthead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; padding-bottom: 6px; border-bottom: 2px solid var(--line); flex-wrap: wrap; }
 .school { display: flex; align-items: center; gap: 10px; font-size: 13px; line-height: 1.45; }
-.emblem { width: 48px; height: 48px; border-radius: 50%; border: 3px double var(--line); display: flex; align-items: center; justify-content: center; text-align: center; font-family: 'Nanum Myeongjo', serif; font-weight: 800; font-size: 11px; line-height: 1.15; }
-.masthead h1 { margin: 0; font-family: 'Black Han Sans', sans-serif; font-weight: 400; font-size: 34px; line-height: 1.1; letter-spacing: .14em; }
+.emblem { width: 50px; height: 50px; border-radius: 50%; border: 3px double var(--line); display: flex; align-items: center; justify-content: center; text-align: center; font-family: var(--serif); font-weight: 700; font-size: 17px; line-height: 1; color: var(--accent); flex: none; }
+.brand { font-family: var(--display); font-weight: 900; font-size: 19px; letter-spacing: -.04em; color: var(--ink); }
+.brand .mi { color: var(--accent); }
+.masthead h1 { margin: 0; font-family: var(--display); font-weight: 900; font-size: 32px; line-height: 1.1; letter-spacing: .16em; }
 .titlebox { margin-top: 14px; border: 1px solid var(--line); background: var(--soft); text-align: center; padding: 6px 8px; font-size: 18px; font-weight: 800; }
 .notice ul { margin: 12px 0 0; padding-left: 1.1em; }
 
@@ -29,26 +38,29 @@ th small, .hint { display: block; font-weight: 400; font-size: 12px; color: var(
 .ox .grp td { background: var(--soft); font-weight: 700; font-size: 13px; }
 .ox label.box { display: flex; align-items: center; justify-content: center; min-height: 48px; cursor: pointer; font-weight: 800; font-size: 17px; }
 .ox label.box input { position: absolute; opacity: 0; width: 1px; height: 1px; }
-.ox label.box:has(input:checked) { background: #000; color: #fff; }
-.ox label.box:has(input:focus-visible) { outline: 2px solid #000; outline-offset: -4px; }
+.ox label.box:has(input:checked) { background: var(--ink); color: var(--paper); }
+.ox label.box:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: -4px; }
 .ox tr.missing td.q { color: var(--red); }
 
-input[type=text] { width: 100%; font: inherit; padding: 8px; border: 1px solid #888; border-radius: 0; background: #fff; min-height: 44px; }
-input:focus-visible, button:focus-visible { outline: 2px solid #000; outline-offset: 2px; }
+input[type=text] { width: 100%; font: inherit; padding: 8px; border: 1px solid #9A8F80; border-radius: 0; background: #fff; min-height: 44px; }
+input:focus-visible, button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .check { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; cursor: pointer; }
-.check input { width: 20px; height: 20px; margin: 0; accent-color: #000; flex: none; }
+.check input { width: 20px; height: 20px; margin: 0; accent-color: var(--ink); flex: none; }
 
 .actions { display: flex; justify-content: center; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
-button { font: inherit; font-weight: 800; cursor: pointer; border: 1px solid #000; background: #fff; color: #000; padding: 10px 18px; min-height: 44px; }
-button.primary { background: #000; color: #fff; padding: 12px 48px; font-size: 16px; letter-spacing: .2em; }
+button { font: inherit; font-weight: 800; cursor: pointer; border: 1px solid var(--ink); background: var(--paper); color: var(--ink); padding: 10px 18px; min-height: 44px; }
+button.primary { background: var(--ink); color: var(--paper); padding: 12px 48px; font-size: 16px; letter-spacing: .2em; }
 button:disabled { opacity: .45; cursor: not-allowed; }
 .msg { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--line); display: none; }
 .msg.show { display: block; }
 .msg.err { border-color: var(--red); color: var(--red); }
 .sign { margin-top: 16px; text-align: right; }
-.sign .principal { font-family: 'Nanum Myeongjo', serif; font-weight: 800; font-size: 17px; margin-top: 2px; }
+.sign .principal { font-family: var(--serif); font-weight: 700; font-size: 17px; margin-top: 2px; }
+.series { margin-top: 28px; padding-top: 10px; border-top: 1px solid #D4CFC4; text-align: center; font-size: 12px; color: var(--muted); letter-spacing: .02em; }
+.series b { color: var(--ink); }
+.series .mi { color: var(--accent); }
 .cut { display: flex; align-items: center; gap: 8px; margin: 30px 0 8px; font-size: 12px; letter-spacing: .3em; }
-.cut::before, .cut::after { content: ""; flex: 1; border-top: 1px dashed #000; }
+.cut::before, .cut::after { content: ""; flex: 1; border-top: 1px dashed var(--ink); }
 .muted { color: var(--muted); }
 .banner { border: 2px solid var(--red); color: var(--red); padding: 10px 12px; margin-bottom: 14px; font-weight: 700; display: none; }
 .banner.show { display: block; }

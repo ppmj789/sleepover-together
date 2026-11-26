@@ -1,6 +1,6 @@
-# sleepover-together
+# 未知의 외박 · sleepover-together
 
-영종도 1박 2일 수련활동(2026. 12. 11.~12.) 온라인 참가 동의서입니다.
+未知 시리즈(未知의 서재 · 未知의 영어 · 未知의 외박)의 외박 편. 2026. 12. 11.~12. 영종도 1박 2일 온라인 참가 동의서입니다.
 화면은 GitHub Pages로 올리고, 응답은 Supabase에 저장합니다.
 
 - 참가자용: `https://ppmj789.github.io/sleepover-together/`
