@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>영종도 수련활동 참가 동의서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Nanum+Gothic:wght@400;700;800&family=Nanum+Myeongjo:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<main class="paper">
+  <div class="banner" id="configBanner">설정이 필요해요: config.js 에 Supabase 키를 넣어 주세요.</div>
+
+  <div class="slogan">꿈을 키우는 즐거운 학교 · 서로 아끼는 행복한 우리 반</div>
+  <div class="masthead">
+    <div class="school">
+      <div class="emblem" aria-hidden="true">서울역<br>초등</div>
+      <div>서울역초등학교<br><span class="muted">제 2026-12호 회신용</span></div>
+    </div>
+    <h1>가정통신문</h1>
+  </div>
+
+  <div class="titlebox">영종도 수련활동 참가 동의서</div>
+
+  <div class="notice">
+    <ul>
+      <li><b>일 시</b> : 2026. 12. 11.(금) 14:00 ~ 12. 12.(토)</li>
+      <li><b>장 소</b> : 인천 영종 운서동 숙소 (운서역 도보 약 700m)</li>
+      <li><b>제출 기한</b> : <span id="deadlineText">2026. 12. 9.(수)</span>까지 · 같은 이름으로 다시 내면 수정돼요</li>
+      <li>퀴즈 답은 <b>아무에게도 공개되지 않고</b>, 수련회 당일 <b>인원수로만</b> 발표돼요. 솔직하게!</li>
+    </ul>
+  </div>
+
+  <form id="rsvpForm" novalidate>
+    <h2>1. 참가자</h2>
+    <table class="form">
+      <tbody>
+        <tr>
+          <th><label for="name">이 름</label></th>
+          <td><input type="text" id="name" maxlength="20" autocomplete="name" required></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>2. 우리 팀은 몇 명이? <span class="sub">O / X 로 답해 주세요</span></h2>
+    <table class="ox">
+      <tbody id="oxBody"></tbody>
+    </table>
+
+    <h2>3. 지목 투표 <span class="sub">우리 팀에서 이럴 것 같은 사람 (선택)</span></h2>
+    <table class="form">
+      <tbody id="voteBody"></tbody>
+    </table>
+    <datalist id="nameList"></datalist>
+
+    <h2>4. 선물 교환</h2>
+    <table class="form">
+      <tbody>
+        <tr>
+          <th>약 속</th>
+          <td><label class="check"><input type="checkbox" id="giftOk"><span><b id="giftLimitText">2만원 미만</b>으로 선물을 준비할게요</span></label></td>
+        </tr>
+        <tr>
+          <th><label for="giftHint">선물 힌트</label><small>선택 · 추첨할 때 읽어 줄게요</small></th>
+          <td><input type="text" id="giftHint" maxlength="100" placeholder="예) 겨울에 쓰는 물건"></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="sign">
+      위와 같이 수련활동 참가를 회신합니다.
+      <div class="principal">서울역초등학교장 귀하</div>
+    </div>
+
+    <div class="actions"><button type="submit" class="primary" id="submitBtn">제 출</button></div>
+    <div class="msg" id="msg" role="status" aria-live="polite"></div>
+  </form>
+
+  <div class="cut">제 출 현 황</div>
+  <p id="board" class="muted">불러오는 중…</p>
+</main>
+
+<script type="module">
+import { CONFIG } from './config.js';
+import { OX, VOTES } from './questions.js';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const $ = (id) => document.getElementById(id);
+const configured = !CONFIG.SUPABASE_KEY.includes('YOUR-');
+const sb = configured ? createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY) : null;
+const deadline = new Date(CONFIG.DEADLINE);
+const closed = () => Date.now() > deadline.getTime();
+const nameKey = (s) => (s || '').replace(/\s/g, '').toLowerCase();
+const STORE = 'sleepover-together:last';
+let submittedKeys = new Set();
+let lastMine = null;
+
+function el(tag, attrs = {}, text) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'class') n.className = v;
+    else if (v === true) n.setAttribute(k, '');
+    else if (v !== false && v != null) n.setAttribute(k, v);
+  }
+  if (text != null) n.textContent = text;
+  return n;
+}
+function show(text, isErr = false) { const m = $('msg'); m.textContent = text; m.className = 'msg show' + (isErr ? ' err' : ''); }
+
+// ---- 화면 구성 ----
+$('giftLimitText').textContent = `${(CONFIG.GIFT_LIMIT / 10000).toLocaleString('ko-KR')}만원 미만`;
+{
+  const d = deadline, wd = ['일','월','화','수','목','금','토'][d.getDay()];
+  $('deadlineText').textContent = `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.(${wd})`;
+}
+{
+  const body = $('oxBody');
+  let group = null, n = 0;
+  for (const q of OX) {
+    if (q.group !== group) {
+      group = q.group;
+      const tr = el('tr', { class: 'grp' }); tr.append(el('td', { colspan: '3' }, group)); body.append(tr);
+    }
+    n += 1;
+    const tr = el('tr', { 'data-q': q.id });
+    const tdQ = el('td', { class: 'q', id: `lbl-${q.id}` }, `${n}. ${q.text}`);
+    tr.append(tdQ);
+    for (const [val, mark] of [['true', 'O'], ['false', 'X']]) {
+      const td = el('td', { class: 'c' });
+      const lab = el('label', { class: 'box' });
+      const inp = el('input', { type: 'radio', name: q.id, value: val, 'aria-label': `${n}번 ${mark}` });
+      lab.append(inp, document.createTextNode(mark));
+      td.append(lab); tr.append(td);
+    }
+    body.append(tr);
+  }
+}
+{
+  const body = $('voteBody');
+  VOTES.forEach((v, i) => {
+    const tr = el('tr');
+    const th = el('th'); th.append(el('label', { for: v.id }, v.text));
+    const td = el('td'); td.append(el('input', { type: 'text', id: v.id, maxlength: '20', list: 'nameList', placeholder: '이름' }));
+    tr.append(th, td); body.append(tr);
+  });
+}
+
+// ---- 이 기기에서 마지막으로 낸 답 채워 넣기 ----
+try { lastMine = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch { lastMine = null; }
+if (lastMine) {
+  $('name').value = lastMine.name || '';
+  for (const [k, v] of Object.entries(lastMine.ox || {})) {
+    const r = document.querySelector(`input[name="${k}"][value="${v}"]`); if (r) r.checked = true;
+  }
+  for (const [k, v] of Object.entries(lastMine.votes || {})) { if ($(k)) $(k).value = v; }
+  $('giftOk').checked = !!lastMine.gift_ok;
+  $('giftHint').value = lastMine.gift_hint || '';
+  show(`이 기기에서 ${lastMine.name}님이 낸 답을 불러왔어요. 고친 뒤 다시 제출하면 수정돼요.`);
+}
+
+if (!configured) { $('configBanner').classList.add('show'); $('submitBtn').disabled = true; }
+if (closed()) { $('submitBtn').disabled = true; $('submitBtn').textContent = '마 감'; }
+
+async function loadBoard() {
+  if (!sb) { $('board').textContent = '설정 후 표시돼요.'; return; }
+  const { data, error } = await sb.rpc('mt_board');
+  if (error) { $('board').textContent = '현황을 불러오지 못했어요.'; return; }
+  const names = data.names || [];
+  submittedKeys = new Set(names.map(nameKey));
+  $('board').textContent = names.length ? `제출 ${data.count}명 · ${names.join(', ')}` : '아직 제출한 사람이 없어요. 1등으로 내 주세요!';
+  $('board').classList.toggle('muted', !names.length);
+  const dl = $('nameList'); dl.replaceChildren(...names.map((n) => el('option', { value: n })));
+}
+
+$('rsvpForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!sb || closed()) return;
+  const name = $('name').value.trim();
+  if (!name) { show('이름을 입력해 주세요.', true); $('name').focus(); return; }
+
+  const ox = {}; const missing = [];
+  document.querySelectorAll('#oxBody tr[data-q]').forEach((tr) => {
+    const q = tr.dataset.q;
+    const picked = tr.querySelector('input:checked');
+    tr.classList.toggle('missing', !picked);
+    if (picked) ox[q] = picked.value === 'true'; else missing.push(q);
+  });
+  if (missing.length) { show(`O/X 에 답하지 않은 문항이 ${missing.length}개 있어요. (빨간 글씨)`, true); document.querySelector('#oxBody tr.missing')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+  if (!$('giftOk').checked) { show('선물 준비 약속에 체크해 주세요.', true); $('giftOk').focus(); return; }
+
+  const votes = {};
+  VOTES.forEach((v) => { const val = $(v.id).value.trim(); if (val) votes[v.id] = val; });
+
+  const mine = lastMine && nameKey(lastMine.name) === nameKey(name);
+  if (submittedKeys.has(nameKey(name)) && !mine) {
+    if (!confirm(`'${name}' 이름으로 이미 제출된 답이 있어요.\n본인이 맞으면 '확인'을 눌러 덮어써 주세요.`)) return;
+  }
+
+  $('submitBtn').disabled = true;
+  const { data, error } = await sb.rpc('mt_submit', {
+    p_name: name, p_gift_ok: true, p_gift_hint: $('giftHint').value, p_ox: ox, p_votes: votes,
+  });
+  $('submitBtn').disabled = false;
+  if (error) { show(error.message || '제출하지 못했어요. 잠시 뒤 다시 시도해 주세요.', true); return; }
+
+  lastMine = { name, ox, votes, gift_ok: true, gift_hint: $('giftHint').value };
+  try { localStorage.setItem(STORE, JSON.stringify(lastMine)); } catch {}
+  show(data === 'updated' ? '수정됐어요. 감사합니다!' : '제출됐어요. 12월 11일에 만나요!');
+  await loadBoard();
+});
+
+loadBoard();
+</script>
+</body>
+</html>

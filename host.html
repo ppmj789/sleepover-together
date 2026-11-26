@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>퀴즈 진행 · 영종도 수련활동</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Nanum+Gothic:wght@400;700;800&family=Nanum+Myeongjo:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./style.css">
+<style>
+  .stage { text-align: center; padding: 28px 8px 8px; }
+  .kind { font-size: 14px; letter-spacing: .2em; }
+  .counter { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .question { font-family: 'Nanum Myeongjo', serif; font-weight: 800; font-size: clamp(24px, 5vw, 38px); line-height: 1.35; margin: 18px 0 8px; text-wrap: balance; }
+  .ask { font-size: 18px; }
+  .answer { margin-top: 22px; min-height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+  .big { font-family: 'Black Han Sans', sans-serif; font-size: clamp(72px, 18vw, 128px); line-height: 1; }
+  .rank { list-style: none; margin: 0; padding: 0; font-size: 22px; font-weight: 800; }
+  .rank li + li { font-size: 17px; font-weight: 700; color: #333; }
+  .login { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-top: 18px; }
+</style>
+</head>
+<body>
+<main class="paper">
+  <div class="slogan">퀴즈 진행용 · 참가자에게는 이 주소를 공유하지 마세요</div>
+  <div class="masthead">
+    <div class="school"><div class="emblem" aria-hidden="true">서울역<br>초등</div><div>서울역초등학교<br><span class="muted">수련활동 레크레이션</span></div></div>
+    <h1>퀴즈 타임</h1>
+  </div>
+
+  <form class="login" id="login">
+    <label class="sr" for="code">진행자 코드</label>
+    <input type="text" id="code" placeholder="진행자 코드" autocomplete="off">
+    <button type="submit">결과 불러오기</button>
+  </form>
+  <div class="msg" id="msg" role="status" aria-live="polite"></div>
+
+  <section class="stage" id="stage" hidden>
+    <div class="kind" id="kind"></div>
+    <div class="counter" id="counter"></div>
+    <div class="question" id="question"></div>
+    <div class="ask" id="ask"></div>
+    <div class="answer" id="answer" aria-live="polite"></div>
+    <div class="actions">
+      <button type="button" id="prev">이전</button>
+      <button type="button" class="primary" id="reveal">정답 공개</button>
+      <button type="button" id="next">다음</button>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+import { CONFIG } from './config.js';
+import { OX, VOTES } from './questions.js';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const $ = (id) => document.getElementById(id);
+const sb = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+const slides = [...OX.map((q) => ({ type: 'ox', ...q })), ...VOTES.map((v) => ({ type: 'vote', ...v }))];
+let data = null, i = 0, shown = false;
+
+function show(text, isErr = false) { const m = $('msg'); m.textContent = text; m.className = 'msg show' + (isErr ? ' err' : ''); }
+
+function render() {
+  const s = slides[i];
+  shown = false;
+  $('kind').textContent = s.type === 'ox' ? '우리 팀은 몇 명이?' : '지목 투표';
+  $('counter').textContent = `${i + 1} / ${slides.length} · 응답 ${data.total}명`;
+  $('question').textContent = s.text;
+  $('ask').textContent = s.type === 'ox' ? `${data.total}명 중에 O라고 답한 사람은 몇 명일까요?` : '1등은 누구일까요?';
+  $('answer').replaceChildren();
+  $('reveal').disabled = false;
+  $('prev').disabled = i === 0;
+  $('next').disabled = i === slides.length - 1;
+}
+
+function reveal() {
+  const s = slides[i];
+  const box = $('answer');
+  box.replaceChildren();
+  if (s.type === 'ox') {
+    const r = data.ox[s.id] || { o: 0, x: 0 };
+    const big = document.createElement('div'); big.className = 'big'; big.textContent = `${r.o}명`;
+    const sub = document.createElement('div'); sub.textContent = `O ${r.o} · X ${r.x}`;
+    box.append(big, sub);
+  } else {
+    const list = (data.votes[s.id] || []).slice(0, 3);
+    const ol = document.createElement('ol'); ol.className = 'rank';
+    if (!list.length) { const li = document.createElement('li'); li.textContent = '표가 없어요'; ol.append(li); }
+    list.forEach((r, k) => { const li = document.createElement('li'); li.textContent = `${k + 1}위 ${r.name} (${r.count}표)`; ol.append(li); });
+    box.append(ol);
+  }
+  $('reveal').disabled = true;
+  shown = true;
+}
+
+$('login').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const code = $('code').value.trim();
+  if (!code) return;
+  const res = await sb.rpc('mt_results', { p_code: code });
+  if (res.error) { show(res.error.message, true); return; }
+  data = res.data;
+  try { sessionStorage.setItem('st-host', code); } catch {}
+  $('msg').className = 'msg';
+  $('login').hidden = true;
+  $('stage').hidden = false;
+  i = 0; render();
+});
+$('reveal').addEventListener('click', reveal);
+$('prev').addEventListener('click', () => { if (i > 0) { i -= 1; render(); } });
+$('next').addEventListener('click', () => { if (i < slides.length - 1) { i += 1; render(); } });
+
+try { const saved = sessionStorage.getItem('st-host'); if (saved) { $('code').value = saved; } } catch {}
+</script>
+</body>
+</html>
